@@ -5,6 +5,10 @@ import numpy as np
 import sys
 from torch import nn
 import os
+from torch.nn.parallel import DataParallel
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 embed_size=512
 hidden_size=256
@@ -92,42 +96,53 @@ def append_to_file(filename, value):
     with open(filename, 'a') as f:
         f.write(f"{value}\n")
 
-model.to(device)
-print_every = 100
-os.makedirs("checkpoints", exist_ok=True)
-os.makedirs("logs", exist_ok=True)
 
-log_files = {
-    'train_loss': 'logs/train_loss.txt',
-    'train_perplex': 'logs/train_perplex.txt',
-    'test_loss': 'logs/test_loss.txt',
-    'test_perplex': 'logs/test_perplex.txt'
-}
+if __name__=="__main__":
+    model.to(device)
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs")
+        model = DataParallel(model)
+    print_every = 100
+    save_every=10
+    os.makedirs("checkpoints", exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
 
-# Clear existing log files
-for file in log_files.values():
-    open(file, 'w').close()
+    log_files = {
+        'train_loss': 'logs/train_loss.txt',
+        'train_perplex': 'logs/train_perplex.txt',
+        'test_loss': 'logs/test_loss.txt',
+        'test_perplex': 'logs/test_perplex.txt'
+    }
 
-for epoch in range(1, num_epochs + 1):
-    train_loss, train_perplex = train_epoch(model, train_loader, criterion, optimizer, device, vocab_size, print_every)
-    eval_loss, eval_perplex = evaluate(model, test_loader, criterion, device, vocab_size, print_every)
-    
-    train_loss_avg = train_loss / len(train_loader)
-    train_perplex_avg = train_perplex / len(train_loader)
-    eval_loss_avg = eval_loss / len(test_loader)
-    eval_perplex_avg = eval_perplex / len(test_loader)
-    
-    print(f'\nEpoch: {epoch}')
-    print(f'Avg. Train Loss: {train_loss_avg:.4f}, Avg. Train Perplexity: {train_perplex_avg:5.4f}')
-    print(f'Avg. Eval Loss: {eval_loss_avg:.4f}, Avg. Eval Perplexity: {eval_perplex_avg:5.4f}\n')
+    # Clear existing log files
+    for file in log_files.values():
+        open(file, 'w').close()
 
-    append_to_file(log_files['train_loss'], train_loss_avg)
-    append_to_file(log_files['train_perplex'], train_perplex_avg)
-    append_to_file(log_files['test_loss'], eval_loss_avg)
-    append_to_file(log_files['test_perplex'], eval_perplex_avg)
+    for epoch in range(1, num_epochs + 1):
+        train_loss, train_perplex = train_epoch(model, train_loader, criterion, optimizer, device, vocab_size, print_every)
+        eval_loss, eval_perplex = evaluate(model, test_loader, criterion, device, vocab_size, print_every)
 
-    torch.save(model.state_dict(), f"checkpoints/model_weights_epoch_{epoch}.pth")
-    print(f"Model weights saved for epoch {epoch}")
+        train_loss_avg = train_loss / len(train_loader)
+        train_perplex_avg = train_perplex / len(train_loader)
+        eval_loss_avg = eval_loss / len(test_loader)
+        eval_perplex_avg = eval_perplex / len(test_loader)
 
-print('Training completed.')
-print('Logs Saved in logs dir!!')
+        print(f'\nEpoch: {epoch}')
+        print(f'Avg. Train Loss: {train_loss_avg:.4f}, Avg. Train Perplexity: {train_perplex_avg:5.4f}')
+        print(f'Avg. Eval Loss: {eval_loss_avg:.4f}, Avg. Eval Perplexity: {eval_perplex_avg:5.4f}\n')
+
+        append_to_file(log_files['train_loss'], train_loss_avg)
+        append_to_file(log_files['train_perplex'], train_perplex_avg)
+        append_to_file(log_files['test_loss'], eval_loss_avg)
+        append_to_file(log_files['test_perplex'], eval_perplex_avg)
+        
+        if epoch % save_every == 0 or epoch == num_epochs:
+            if isinstance(model, DataParallel):
+                torch.save(model.module.state_dict(), f"checkpoints/model_weights_epoch_{epoch}.pth")
+            else:
+                torch.save(model.state_dict(), f"checkpoints/model_weights_epoch_{epoch}.pth")
+            print(f"Model weights saved for epoch {epoch}")
+
+    print('Training completed.')
+
+

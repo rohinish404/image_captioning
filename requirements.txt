@@ -1,0 +1,5 @@
+torch
+spacy
+torchvision
+scikit-learn
+pandas

@@ -10,6 +10,10 @@ from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
+
 spacy_eng = spacy.load("en_core_web_sm")
 class Vocabulary:
   def __init__(self, freq_threshold):

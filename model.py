@@ -3,7 +3,9 @@ from torch import nn
 import torchvision
 import torch.nn.functional as F
 import numpy as np
+import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class EncoderCNN(nn.Module):
@@ -109,6 +111,28 @@ class DecoderRNN(nn.Module):
       outputs[:, t, :] = output
       atten_weights[:, t, :] = atten_weight
     return outputs, atten_weights
+  
+  def greedy_search(self, features, max_sentence=20):
+    sentence = []
+    weights = []
+    input_word = torch.tensor(1).unsqueeze(0).to(device)
+    h, c = self.init_hidden(features)
+
+    while True:
+      word_embed = self.embeddings(input_word)
+      context, atten_weight = self.attention(features, h)
+      input_concat = torch.cat([word_embed, context], 1)
+      h, c = self.lstm(input_concat, (h,c))
+      h = self.drop(h)
+      output = self.fc(h)
+      scoring = F.log_softmax(output, dim=1)
+      top_idx = scoring[0].topk(1)[1]
+      sentence.append(top_idx.item())
+      weights.append(atten_weight)
+      input_word = top_idx
+      if len(sentence)>max_sentence or top_idx==2:
+        break
+    return sentence, weights
   
   
   def init_hidden(self, features):
