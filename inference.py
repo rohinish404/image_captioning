@@ -2,8 +2,10 @@ import torch
 from train import model
 from data_loader import transform_train, test_loader
 from PIL import Image
+import matplotlib.pyplot as plt
 
-model.load_state_dict(torch.load("checkpoints/model_weights_epoch_20.pth",map_location=device))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.load_state_dict(torch.load("path_to_checkpoint",map_location=device))
 model.eval()
 
 def get_caption(image_path):
@@ -23,3 +25,14 @@ def clean_sentence(output):
     sentence = " ".join(words)
 
     return sentence
+
+if __name__=="__main__":
+    image_path = "path_to_image"
+    output_text = get_caption(image_path)
+    image = Image.open("/kaggle/input/flickr8k/Images/1000268201_693b08cb0e.jpg").convert("RGB")
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image)
+    plt.axis('off')
+    plt.show()
+    clean_sentence(output_text)
+

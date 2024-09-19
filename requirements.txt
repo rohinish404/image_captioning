@@ -3,3 +3,4 @@ spacy
 torchvision
 scikit-learn
 pandas
+matplotlib
