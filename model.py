@@ -56,6 +56,34 @@ class BahdanauAttention(nn.Module):
 
     return context, atten_weight
 
+class LuongAttention(nn.Module):
+  def __init__(self, input_dim, hidden_dim, output_dim=1):
+    super(LuongAttention, self).__init__()
+    self.input_dim = input_dim
+    self.hidden_dim = hidden_dim
+    self.output_dim = output_dim
+
+    self.Wa = nn.Linear(self.input_dim, self.hidden_dim)
+
+  def forward(self, features, decoder_hidden):
+    # print(features.shape) #torch.Size([32, 49, 2048])
+    # print(decoder_hidden.shape) #torch.Size([32, 256])
+    features_proj = self.Wa(features)
+    # print(features_proj.shape)
+    decoder_hidden = decoder_hidden.unsqueeze(1)
+    # print((torch.transpose(features_proj, 1,2)).shape)
+
+    atten_dot = torch.bmm(decoder_hidden, torch.transpose(features_proj,1,2))
+    atten_weight = F.softmax(atten_dot, dim=2)
+
+    context = torch.bmm(atten_weight, features)
+    context = context.squeeze(1)
+    atten_weight = atten_weight.squeeze(1)
+#     print(context.shape)
+#     print(atten_weight.shape)
+
+    return context, atten_weight
+
 class DecoderRNN(nn.Module):
   def __init__(self, num_features, embedding_dim, hidden_dim, vocab_size, p=0.5):
     super(DecoderRNN, self).__init__()
