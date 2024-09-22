@@ -23,8 +23,14 @@ Current architecture consists of -
 - Trained for 100 epochs on GPU T4 x2. Total training time around 1 hour 15 mins.
 - Avg Eval loss = 3.4731
 - Avg Eval Perplexity = 32.7512
+#### Some Results
 
+With Bahdanau Attention - <br />
+<img src="/results/rs_1.png" alt="drawing" width="500"/>
 
+With Luong Attention - <br />
+<img src="/results/luong_results/result_1.png" alt="drawing" width="500"/>
+<img src="/results/luong_results/result_2.png" alt="drawing" width="500"/>
 
 
 
