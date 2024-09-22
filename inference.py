@@ -29,7 +29,7 @@ def clean_sentence(output):
 if __name__=="__main__":
     image_path = "path_to_image"
     output_text = get_caption(image_path)
-    image = Image.open("/kaggle/input/flickr8k/Images/1000268201_693b08cb0e.jpg").convert("RGB")
+    image = Image.open("/nature.jpg").convert("RGB")
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
     plt.axis('off')
